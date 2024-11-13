@@ -264,7 +264,7 @@ app.listen(3000, () => {
 - `404 Not Found`: The requested resource could not be found.
 - `500 Internal Server Error`: There was a server error while processing the request.
 
-**Task 3**:
+**Task 4**:
 - Configure routes to return different HTTP status codes:
   - `GET /`: return `200 OK` with "Hello World"
   - `POST /`: return `201 Created`
@@ -272,7 +272,7 @@ app.listen(3000, () => {
   - `GET /not-found`: return `404 Not Found`
   - `GET /error`: return `500 Internal Server Error`
 
-**Task 3 Solution**:
+**Task 4 Solution**:
 ```js
 // read
 app.get("/", (req, res) => {
@@ -321,11 +321,11 @@ app.get("/error", (req, res) => {
   </person>
   ```
 
-**Task 4**:
+**Task 5**:
 - Add the /cars Route  define a new GET route for /cars that responds with JSON data.
 
 
-**Task 4 solution**:
+**Task 5 solution**:
 ```js
 let cars = [
   { id: 1, make: "Toyota", model: "Corolla", year: 2020 },
