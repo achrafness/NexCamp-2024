@@ -122,7 +122,7 @@ To interact with APIs, developers commonly use tools that help in making request
 ### Setting Up Node.js
 - **Node.js**: Node.js is a JavaScript runtime that enables JavaScript to run on the server-side (outside the browser). Originally, JavaScript could only run in a browser, but Node.js makes it possible to use it on your machine.
 
-For a brief overview of JavaScript, click here: [Link text Here](https://link-url-here.org)
+For a brief overview of JavaScript, click here: [Link text Here](https://github.com/achrafness/NexCamp-2024/blob/main/00-basics-js/basics.md)
 
 **Task 2**:
 1. Declare two variables, `a` and `b`, with values 10 and 20, respectively.

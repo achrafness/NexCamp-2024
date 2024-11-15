@@ -1,132 +1,171 @@
-# JavaScript Basics 
+# Javascript 
+JavaScript is a dynamic programming language, meaning it is highly versatile and can execute many programming paradigms like procedural, object-oriented, and functional programming. It also allows variables, types, and objects to change at runtime , widely regarded as the world's most popular language, powering the Web and being easy to learn.
 
-## Variables
-- **Declare variables**
+## Basics: Declaration and Types
+
+### Variable Declaration
+- **`var`**, **`let`**, and **`const`**:
+  - `var`: Function-scoped, hoisted (old standard).
+  - `let`: Block-scoped, not hoisted.
+  - `const`: Block-scoped, read-only.
+
   ```javascript
-  const age = 30; 
-  let name = "John"; 
+  var globalVar = "I'm accessible anywhere";
+  let blockScoped = "I exist within this block";
+  const constantValue = 42; // Cannot be reassigned
   ```
+
+
+
+### Data Types
+- **Primitive Types**:
+  - String, Number, Boolean, Null, Undefined, Symbol, BigInt.
+  ```javascript
+  let str = "Hello"; // String
+  let num = 25;      // Number
+  let isValid = true; // Boolean
+  let empty = null;  // Null
+  let undef;         // Undefined
+  ```
+
+- **Other Types**:
+  ```javascript
+  const person = { name: "Alice", age: 30 }; // Object
+  const numbers = [1, 2, 3]; // Array
+  ```
+
+
+##  Mixing Strings and Variables
+- **Syntax**: Use backticks (\``) and `${}` for interpolation.
+  ```javascript
+  const name = "John";
+  const greeting = `Hello, ${name}! Welcome back.`;
+  console.log(greeting); // "Hello, John! Welcome back."
+  ```
+
+  ```javascript
+  console.log("Hello, ", name ,"! Welcome back.");
+  ```
+
+
+
+## Operators
+
+### Arithmetic Operators
+```javascript
+let sum = 5 + 3;  // 8
+let diff = 5 - 3; // 2
+let prod = 5 * 3; // 15
+let quotient = 5 / 3; // 1.6667
+let remainder = 5 % 3; // 2
+```
+
+### Comparison Operators
+```javascript
+console.log(5 > 3); // true
+console.log(5 === "5"); // false (strict equality) the type and the value
+```
+
+### Logical Operators
+```javascript
+console.log(true && false); // false
+console.log(true || false); // true
+console.log(!true); // false
+```
+
+
 
 ## Control Structures
-- **Conditional Statements:**
+
+### `if`/`else`
+```javascript
+const age = 20;
+if (age >= 18) {
+    console.log("Adult");
+} else {
+    console.log("Minor");
+}
+```
+
+### `switch` Case
+```javascript
+const day = "Monday";
+switch (day) {
+    case "Monday":
+        console.log("Start of the week");
+        break;
+    case "Friday":
+        console.log("Almost weekend");
+        break;
+    default:
+        console.log("Midweek");
+}
+```
+
+### Loops
+- **`for` Loop**:
   ```javascript
-  if (condition) {
-      // code
-  } else if (anotherCondition) {
-      // code
-  } else {
-      // code
+  for (let i = 0; i < 5; i++) {
+      console.log(i);
+  }
+  ```
+- **`while` Loop**:
+  ```javascript
+  let count = 0;
+  while (count < 5) {
+      console.log(count);
+      count++;
   }
   ```
 
-- **Switch Statement:**
-  ```javascript
-  switch (expression) {
-      case value1:
-          // code
-          break;
-      case value2:
-          // code
-          break;
-      default:
-          // code
-  }
-  ```
 
-- **Loops:**
-  - **For Loop:**
-    ```javascript
-    for (let i = 0; i < 10; i++) {
-        // code
+
+## Objects
+
+### Properties and Methods
+```javascript
+const car = {
+    brand: "Tesla",
+    model: "Model 3",
+    start() {
+        console.log(`${this.brand} ${this.model} is starting.`);
     }
-    ```
-  - **While Loop:**
-    ```javascript
-    while (condition) {
-        // code
-    }
-    ```
+};
+car.start(); // "Tesla Model 3 is starting."
+```
+
 
 
 ## Functions
-- **Function Declaration:**
-  ```javascript
-  function functionName(params) {
-      // code
-  }
-  ```
 
-- **Function Expression:**
-  ```javascript
-  const functionName = function(params) {
-      // code
-  };
-  ```
+### Declaration and Expressions
+```javascript
+function sayHello(name) {
+    return `Hello, ${name}`;
+}
 
-- **Arrow Function:**
-  ```javascript
-  const functionName = (params) => {
-      // code
-  };
-  ```
+const greet = function(name) {
+    return `Hi, ${name}`;
+};
 
-## Objects
-- **Creating an Object:**
-  ```javascript
-  const person = {
-      name: "John",
-      age: 30
-  };
-  ```
+const arrowGreet = (name) => `Hey, ${name}`;
+```
 
-- **Accessing Object Properties:**
-  ```javascript
-  console.log(person.name); // Dot notation
-  console.log(person["age"]); // Bracket notation
-  ```
 
-## Arrays
-- **Creating an Array:**
-  ```javascript
-  const fruits = ["apple", "banana", "cherry"];
-  ```
 
-- **Array Methods:**
-  - `push()`: Add to end
-  - `pop()`: Remove from end
-  - `shift()`: Remove from start
-  - `unshift()`: Add to start
+## Higher-Order Functions
 
-## Higher Order Functions
-- **Definition**: Functions that can take other functions as arguments or return them as output.
-  
-- **Example of Higher-Order Function:**
-  ```javascript
-  function greet(name) {
-      return `Hello, ${name}!`;
-  }
+### `map`, `filter`, `reduce`
+```javascript
+const nums = [1, 2, 3];
 
-  function processUserInput(callback) {
-      const name = "John";
-      console.log(callback(name));
-  }
+// Double each number
+const doubled = nums.map(num => num * 2); // [2, 4, 6]
 
-  processUserInput(greet); // Output: Hello, John!
-  ```
+// Filter out odd numbers
+const evens = nums.filter(num => num % 2 === 0); // [2]
 
-- **Array Methods that are Higher-Order Functions:**
-  - **`map()`:** Transforms each element in an array.
-    ```javascript
-    const numbers = [1, 2, 3];
-    const doubled = numbers.map((num) => num * 2); // [2, 4, 6]
-    ```
-  
-  - **`filter()`:** Filters elements based on a condition.
-    ```javascript
-    const evens = numbers.filter((num) => num % 2 === 0); // [2]
-    ```
+// Sum all numbers
+const sum = nums.reduce((total, num) => total + num, 0); // 6
+```
 
-  - **`forEach()`:** Executes a function for each element.
-    ```javascript
-    numbers.forEach((num) => console.log(num)); // Outputs each number
-    ```
