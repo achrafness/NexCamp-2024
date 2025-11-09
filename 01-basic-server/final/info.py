@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Target information
+# Target information 
 TARGET_IP="10.96.34.49"
 DOMAIN="procurement.wrnmc.mil"
 COOKIE_FILE="cookies.txt"
