@@ -48,7 +48,7 @@ class Root:
     def __reduce__(self, *args):
         return str, (str(self),)
 
-server_host = 'http://127.0.0.1:7501'
+server_host = 'http://ml-api.pytorch-lab.internal:7501'
 server_host =  server_host
 command =  'id'
 
