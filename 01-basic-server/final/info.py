@@ -49,8 +49,8 @@ class Root:
         return str, (str(self),)
 
 server_host = 'http://127.0.0.1:7501'
-server_host = input(f'LightingApp Root URL [{server_host}]: ') or server_host
-command = input('Enter Command [id]: ') or 'id'
+server_host = server_host
+command =  'id'
 
 def send_delta(d):
     # this posts a delta to the remote host
